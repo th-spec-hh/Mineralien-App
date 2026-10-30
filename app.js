@@ -6,7 +6,10 @@
   let filter = "Alle";
   let current = null;      // geöffnetes Stück
   let editing = null;      // Stück im Bearbeiten-Modus, sonst null (= neues Stück)
-  let pendingPhoto = null; // { full: Blob, thumb: Blob } aus dem Formular
+  let pendingPhoto = null; // { full: Blob, thumb: Blob, original?: Blob, bg?: string } aus dem Formular
+  let base = null;         // unbearbeitetes Foto im Formular { full, thumb? }, Grundlage fürs Freistellen
+  let cutout = null;       // freigestelltes Stück (PNG mit transparentem Hintergrund) zu base
+  let bg = "";             // gewählter Hintergrund, "" = Original
   const urls = new Map();  // id -> { thumb, full } Objekt-URLs
 
   const inv = (n) => "M" + String(n).padStart(4, "0");
@@ -47,10 +50,11 @@
   }
 
   function scaled(img, max, quality) {
-    const ratio = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    const ratio = Math.min(1, max / Math.max(w, h));
     const canvas = document.createElement("canvas");
-    canvas.width = Math.round(img.naturalWidth * ratio);
-    canvas.height = Math.round(img.naturalHeight * ratio);
+    canvas.width = Math.round(w * ratio);
+    canvas.height = Math.round(h * ratio);
     canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
     return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
   }
@@ -60,6 +64,80 @@
     const img = await loadImage(file);
     const [full, thumb] = await Promise.all([scaled(img, 1600, 0.85), scaled(img, 520, 0.8)]);
     return { full, thumb };
+  }
+
+  // ---------- Neutraler Hintergrund ----------
+  // Die KI (ISNet über @imgly/background-removal) läuft im Browser auf dem Gerät. Aus dem Netz kommt nur
+  // einmalig das Modell; das Foto selbst wird nirgends hingeschickt.
+
+  const BACKGROUNDS = {
+    hell: { top: "#F6F7F5", bottom: "#DCE0DC", shadow: "rgba(20, 30, 25, .30)" },
+    grau: { top: "#B6BBB8", bottom: "#8C928E", shadow: "rgba(10, 15, 12, .40)" },
+    dunkel: { top: "#2B2F2E", bottom: "#0D0F0F", shadow: "rgba(0, 0, 0, .75)" },
+  };
+  const KI = {
+    model: "isnet_fp16",
+    output: { format: "image/png" },
+    progress: (key, now, total) => {
+      if (key.startsWith("fetch:")) busy(`KI wird geladen … ${Math.round((now / total) * 100)} %\n(nur beim ersten Mal, ca. 90 MB)`);
+      else if (key.startsWith("compute")) busy("Hintergrund wird entfernt …");
+    },
+  };
+  let remover = null;
+
+  async function cutOut(blob) {
+    if (!remover) remover = await import("./vendor/background-removal.mjs");
+    return loadImage(await remover.removeBackground(blob, KI));
+  }
+
+  function compose(img, choice) {
+    const c = BACKGROUNDS[choice];
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, c.top);
+    grad.addColorStop(1, c.bottom);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    // Weicher Schatten, damit der Stein nicht aufgeklebt wirkt.
+    const m = Math.max(w, h);
+    ctx.shadowColor = c.shadow;
+    ctx.shadowBlur = m * 0.03;
+    ctx.shadowOffsetY = m * 0.012;
+    ctx.drawImage(img, 0, 0);
+    return canvas;
+  }
+
+  async function setBackground(choice) {
+    if (!base || $("drop").classList.contains("busy")) return;
+    busy("Hintergrund wird entfernt …");
+    try {
+      if (choice) {
+        if (!cutout) cutout = await cutOut(base.full);
+        const canvas = compose(cutout, choice);
+        const [full, thumb] = await Promise.all([scaled(canvas, 1600, 0.85), scaled(canvas, 520, 0.8)]);
+        pendingPhoto = { full, thumb, original: base.full, bg: choice };
+      } else {
+        if (!base.thumb) base.thumb = await scaled(await loadImage(base.full), 520, 0.8);
+        pendingPhoto = { full: base.full, thumb: base.thumb };
+      }
+      bg = choice;
+      setPreview(URL.createObjectURL(pendingPhoto.full));
+    } catch (err) {
+      console.error(err);
+      toast(remover ? "Freistellen hat nicht geklappt. Beim ersten Mal braucht die App Internet." : "KI konnte nicht geladen werden. Ist Internet da?", 4000);
+    } finally {
+      busy("");
+      validate();
+    }
+  }
+
+  function busy(text) {
+    $("drop").classList.toggle("busy", !!text);
+    if (text) $("drop").dataset.busy = text;
   }
 
   // ---------- Navigation ----------
@@ -148,6 +226,8 @@
   async function openForm(item) {
     editing = item || null;
     pendingPhoto = null;
+    base = cutout = null;
+    bg = "";
     $("form").reset();
     $("form-title").textContent = editing ? "Bearbeiten" : "Neues Stück";
     $("form-hint").textContent = editing ? `Inventarnummer ${inv(editing.number)}` : "Die Inventarnummer wird automatisch vergeben.";
@@ -155,6 +235,11 @@
     $("f-name").value = editing ? editing.name : "";
     $("f-art").value = editing ? editing.art : "";
     $("f-date").value = editing ? editing.date : today();
+    if (editing) {
+      const rec = await DB.getPhoto(editing.id);
+      if (rec) base = rec.original ? { full: rec.original } : { full: rec.full, thumb: rec.thumb };
+      bg = rec && rec.original ? rec.bg || "hell" : "";
+    }
     setPreview(editing ? (await photoUrls(editing.id)).full : "");
     renderSuggest();
     validate();
@@ -168,6 +253,9 @@
     if (src) img.src = src; else img.removeAttribute("src");
     $("photo-actions").hidden = !!src;
     $("replace").hidden = !src;
+    $("neutral").hidden = !src || !base || !!bg;
+    $("bgbar").hidden = !src || !bg;
+    $("bgbar").querySelectorAll(".chip").forEach((b) => b.setAttribute("aria-pressed", b.dataset.bg === bg));
   }
 
   function renderSuggest() {
@@ -189,14 +277,17 @@
     const file = e.target.files && e.target.files[0];
     e.target.value = "";
     if (!file) return;
-    $("drop").classList.add("busy");
+    busy("Foto wird vorbereitet …");
     try {
       pendingPhoto = await preparePhoto(file);
+      base = { ...pendingPhoto };
+      cutout = null;
+      bg = "";
       setPreview(URL.createObjectURL(pendingPhoto.full));
     } catch (err) {
       toast("Foto konnte nicht geladen werden. Bitte ein anderes wählen.");
     } finally {
-      $("drop").classList.remove("busy");
+      busy("");
       validate();
     }
   }
@@ -251,12 +342,12 @@
 
   // ---------- Kleinkram ----------
 
-  function toast(text) {
+  function toast(text, ms = 2000) {
     const el = $("toast");
     el.textContent = text;
     el.hidden = false;
     clearTimeout(toast.t);
-    toast.t = setTimeout(() => (el.hidden = true), 2000);
+    toast.t = setTimeout(() => (el.hidden = true), ms);
   }
 
   // ---------- Start ----------
@@ -269,6 +360,8 @@
   $("form").onsubmit = (e) => { e.preventDefault(); save(); };
   $("cam").onchange = onPhoto;
   $("lib").onchange = onPhoto;
+  $("neutral").onclick = () => setBackground("hell");
+  $("bgbar").querySelectorAll(".chip").forEach((b) => (b.onclick = () => setBackground(b.dataset.bg)));
   ["f-name", "f-art", "f-date"].forEach((id) => ($(id).oninput = validate));
   $("f-name").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); $("f-art").focus(); } };
   $("f-art").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } };

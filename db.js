@@ -1,5 +1,6 @@
 // Lokale Speicherung in IndexedDB. Alle Daten bleiben auf dem Gerät; nichts wird hochgeladen.
-// Stores: "items" (Einträge), "photos" (Foto + Vorschaubild als Blob), "meta" (Zähler für Inventarnummern)
+// Stores: "items" (Einträge), "photos" (Foto + Vorschaubild als Blob, bei neutralem Hintergrund zusätzlich
+// das Originalfoto und der gewählte Hintergrund), "meta" (Zähler für Inventarnummern)
 const DB = (() => {
   const NAME = "stufen";
   const VERSION = 1;
