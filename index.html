@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Stufen</title>
+  <meta name="description" content="Katalog für die eigene Mineraliensammlung">
+  <meta name="theme-color" content="#EEF0EE" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121615" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Stufen">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app">
+
+    <!-- Sammlung -->
+    <section class="screen" id="s-list" aria-label="Sammlung">
+      <header class="bar">
+        <span></span>
+        <span class="count" id="count"></span>
+      </header>
+      <div class="scroll" id="list-scroll">
+        <h1 class="bigtitle">Sammlung</h1>
+        <label class="search" for="q">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="Name oder Art suchen" autocomplete="off" enterkeyhint="search">
+        </label>
+        <div class="chips" id="chips" role="group" aria-label="Nach Art filtern"></div>
+        <div class="grid" id="grid"></div>
+      </div>
+      <button class="fab" id="add" aria-label="Neues Stück">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </section>
+
+    <!-- Stück -->
+    <section class="screen" id="s-detail" aria-label="Stück" hidden>
+      <header class="bar">
+        <button class="navbtn" id="back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Sammlung
+        </button>
+        <button class="navbtn" id="edit">Bearbeiten</button>
+      </header>
+      <div class="scroll" id="detail"></div>
+    </section>
+
+    <!-- Neues Stück / Bearbeiten -->
+    <section class="screen" id="s-form" aria-labelledby="form-title" hidden>
+      <header class="formbar">
+        <button class="navbtn" id="cancel">Abbrechen</button>
+        <h2 id="form-title">Neues Stück</h2>
+        <button class="save" id="save" aria-disabled="true">Sichern</button>
+      </header>
+      <form class="scroll" id="form" novalidate>
+        <div class="photo-drop" id="drop">
+          <img id="preview" alt="Foto des Stücks" hidden>
+          <div class="photo-actions" id="photo-actions">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+            <div class="row">
+              <label class="btn primary" for="cam">Foto aufnehmen</label>
+              <label class="btn" for="lib">Mediathek</label>
+            </div>
+            <span>Tipp: Stein auf neutralem Grund, Tageslicht</span>
+          </div>
+          <label class="btn small replace" id="replace" for="lib" hidden>Foto ändern</label>
+          <input id="cam" type="file" accept="image/*" capture="environment" hidden>
+          <input id="lib" type="file" accept="image/*" hidden>
+        </div>
+        <div class="fields">
+          <div class="field"><label for="f-name">Name</label><input id="f-name" placeholder="z. B. Bergkristall-Stufe" autocomplete="off" autocapitalize="words" enterkeyhint="next"></div>
+          <div class="field"><label for="f-art">Art</label><input id="f-art" placeholder="z. B. Quarz" autocomplete="off" autocapitalize="words" enterkeyhint="done"></div>
+          <div class="field"><label for="f-date">Kaufdatum</label><input id="f-date" type="date"></div>
+        </div>
+        <div class="suggest" id="suggest"></div>
+        <p class="hint" id="form-hint">Die Inventarnummer wird automatisch vergeben.</p>
+        <button type="button" class="danger" id="delete" hidden>Stück löschen</button>
+      </form>
+    </section>
+
+    <!-- Löschen bestätigen -->
+    <div class="sheet-backdrop" id="confirm" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="confirm-text">
+        <p id="confirm-text">Dieses Stück wirklich löschen? Das Foto wird ebenfalls entfernt.</p>
+        <button class="sheet-btn danger-fill" id="confirm-yes">Löschen</button>
+        <button class="sheet-btn" id="confirm-no">Abbrechen</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" hidden></div>
+  </main>
+
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
