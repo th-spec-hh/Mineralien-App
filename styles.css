@@ -131,7 +131,11 @@ dl.facts dd { text-align: right; font-weight: 600; font-variant-numeric: tabular
 .btn.primary { background: var(--malachite); border-color: var(--malachite); color: var(--malachite-ink); }
 .btn.small { font-size: 13px; padding: 7px 11px; }
 .replace { position: absolute; right: 10px; bottom: 10px; background: var(--paper); }
-.busy::after { content: "Foto wird vorbereitet …"; position: absolute; inset: 0; display: grid; place-items: center; background: var(--paper); color: var(--slate); font-size: 14px; }
+.neutral { position: absolute; left: 10px; bottom: 10px; background: var(--paper); }
+.busy::after { content: attr(data-busy); position: absolute; inset: 0; display: grid; place-items: center; background: var(--paper); color: var(--slate); font-size: 14px; text-align: center; padding: 0 24px; white-space: pre-line; }
+.bgbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.bgbar span { font-size: 11px; font-weight: 600; color: var(--slate); text-transform: uppercase; letter-spacing: .06em; margin-right: 2px; }
+.bgbar .chip { font-size: 12.5px; padding: 5px 10px; }
 .fields { margin-top: 18px; background: var(--paper); border: 1px solid var(--hair); border-radius: 16px; overflow: hidden; }
 .field { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-bottom: 1px solid var(--hair); }
 .field:last-child { border-bottom: 0; }
@@ -150,4 +154,4 @@ dl.facts dd { text-align: right; font-weight: 600; font-variant-numeric: tabular
 .sheet-btn { border: 0; border-radius: 14px; padding: 15px; background: var(--paper); color: var(--malachite); font-weight: 600; font-size: 17px; cursor: pointer; }
 .sheet-btn.danger-fill { color: var(--danger); }
 
-.toast { position: absolute; left: 50%; bottom: calc(96px + var(--bottom)); transform: translateX(-50%); background: var(--graphite); color: var(--stone); font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 12px; z-index: 30; white-space: nowrap; }
+.toast { position: absolute; left: 50%; bottom: calc(96px + var(--bottom)); transform: translateX(-50%); background: var(--graphite); color: var(--stone); font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 12px; z-index: 30; width: max-content; max-width: calc(100% - 36px); text-align: center; }

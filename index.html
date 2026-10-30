@@ -68,9 +68,19 @@
             </div>
             <span>Tipp: Stein auf neutralem Grund, Tageslicht</span>
           </div>
+          <button type="button" class="btn small neutral" id="neutral" hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Hintergrund neutral
+          </button>
           <label class="btn small replace" id="replace" for="lib" hidden>Foto ändern</label>
           <input id="cam" type="file" accept="image/*" capture="environment" hidden>
           <input id="lib" type="file" accept="image/*" hidden>
+        </div>
+        <div class="bgbar" id="bgbar" role="group" aria-label="Hintergrund" hidden>
+          <span>Hintergrund</span>
+          <button type="button" class="chip" data-bg="hell">Hell</button>
+          <button type="button" class="chip" data-bg="grau">Grau</button>
+          <button type="button" class="chip" data-bg="dunkel">Dunkel</button>
+          <button type="button" class="chip" data-bg="">Original</button>
         </div>
         <div class="fields">
           <div class="field"><label for="f-name">Name</label><input id="f-name" placeholder="z. B. Bergkristall-Stufe" autocomplete="off" autocapitalize="words" enterkeyhint="next"></div>
